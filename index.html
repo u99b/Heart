@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>Particle Morphing - تحول الجسيمات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            background-color: #000000;
+            font-family: sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            text-align: center;
+            padding: 1rem;
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.5), transparent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        #text-input {
+            pointer-events: auto;
+            width: 100%;
+            max-width: 500px;
+            padding: 0.5rem 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            outline: none;
+            backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+            font-family: sans-serif;
+        }
+
+        #text-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        #text-input:focus {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .input-container {
+                padding: 1rem 1rem;
+            }
+
+            #text-input {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .input-container {
+                padding: 0.75rem 0.75rem;
+            }
+
+            #text-input {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div class="input-container">
+        <input 
+            id="text-input" 
+            type="text" 
+            placeholder="اكتب نصاً..." 
+            maxlength="15" 
+            autocomplete="off"
+        >
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="particle-morphing.js"></script>
+</body>
+</html>
