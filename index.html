@@ -3,117 +3,509 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-    <title>Particle Morphing - تحول الجسيمات</title>
+    <title>Particle Morphing</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --accent: #7c6fff;
+            --accent2: #ff6f91;
+            --glass: rgba(14, 12, 28, 0.92);
+            --border: rgba(255,255,255,0.07);
+            --text: rgba(255,255,255,0.88);
+            --muted: rgba(255,255,255,0.4);
+            --track: rgba(255,255,255,0.08);
         }
 
         body {
-            width: 100%;
-            height: 100vh;
-            background-color: #000000;
-            font-family: sans-serif;
+            width: 100%; height: 100vh;
+            background: #000;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
             overflow: hidden;
             touch-action: none;
+            direction: rtl;
         }
 
-        #canvas-container {
+        #canvas-container { position: fixed; inset: 0; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+            right: -380px; top: 0;
+            width: 340px; height: 100vh;
+            background: var(--glass);
+            border-left: 1px solid var(--border);
+            backdrop-filter: blur(30px) saturate(180%);
+            z-index: 200;
+            transition: right 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -20px 0 60px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column;
         }
 
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
+        .sidebar.active { right: 0; }
+
+        .sidebar-header {
+            padding: 20px 18px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(124,111,255,0.12), rgba(255,111,145,0.08));
         }
 
-        .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 50;
+        .sidebar-title {
+            font-size: 15px; font-weight: 700;
+            color: var(--text); letter-spacing: 0.3px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .sidebar-title-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            box-shadow: 0 0 10px var(--accent);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+
+        .close-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .close-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+        .sidebar-content {
+            padding: 16px; overflow-y: auto; flex: 1;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(124,111,255,0.3) transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar { width: 4px; }
+        .sidebar-content::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.3); border-radius: 4px; }
+
+        .control-section { margin-bottom: 22px; }
+
+        .section-label {
+            font-size: 10px; font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1.5px;
+            margin-bottom: 10px; display: flex;
+            align-items: center; gap: 6px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1; height: 1px;
+            background: var(--border);
+        }
+
+        /* Color Buttons */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px; margin-bottom: 10px;
+        }
+
+        .theme-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 10px 6px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+            font-family: inherit;
+        }
+
+        .theme-btn span.label {
+            font-size: 9px; color: var(--muted);
+            font-weight: 600; letter-spacing: 0.3px;
+        }
+
+        .theme-btn:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+
+        .theme-btn.active {
+            background: rgba(124,111,255,0.2);
+            border-color: rgba(124,111,255,0.5);
+            box-shadow: 0 0 16px rgba(124,111,255,0.2), inset 0 0 10px rgba(124,111,255,0.05);
+        }
+
+        /* Color Picker */
+        .color-picker-row {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .color-picker-row label {
+            font-size: 12px; color: var(--muted); flex: 1;
+        }
+
+        input[type="color"] {
+            width: 36px; height: 28px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 2px;
+        }
+
+        /* Sliders */
+        .slider-row {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 12px;
+            margin-bottom: 6px;
+        }
+
+        .slider-top {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 8px;
+        }
+
+        .slider-name {
+            font-size: 12px; color: rgba(255,255,255,0.65);
+            font-weight: 600;
+        }
+
+        .slider-value {
+            font-size: 11px; color: var(--accent);
+            font-weight: 700;
+            background: rgba(124,111,255,0.12);
+            padding: 2px 7px; border-radius: 20px;
+            min-width: 36px; text-align: center;
+        }
+
+        input[type="range"] {
+            width: 100%; height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--track);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            box-shadow: 0 0 8px rgba(124,111,255,0.5);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none; cursor: pointer;
+        }
+
+        /* Particle count */
+        .count-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .count-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 8px 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px; font-weight: 600;
             text-align: center;
+            transition: all 0.2s;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .count-btn:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .count-btn.active {
+            background: rgba(255,111,145,0.18);
+            border-color: rgba(255,111,145,0.45);
+            color: var(--accent2);
+            box-shadow: 0 0 12px rgba(255,111,145,0.15);
+        }
+
+        /* Shape buttons */
+        .shape-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .shape-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 10px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .shape-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+        }
+
+        .shape-btn.active {
+            background: rgba(124,111,255,0.18);
+            border-color: rgba(124,111,255,0.45);
+            color: var(--accent);
+        }
+
+        /* Reset button */
+        .reset-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px; font-weight: 600;
+            font-family: inherit;
+            display: flex; align-items: center;
+            justify-content: center; gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255,80,80,0.1);
+            border-color: rgba(255,80,80,0.3);
+            color: rgba(255,120,120,0.9);
+        }
+
+        /* ===== FAB ===== */
+        .toggle-sidebar-btn {
+            position: fixed;
+            right: 18px; bottom: 90px;
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, rgba(124,111,255,0.25), rgba(255,111,145,0.2));
+            border: 1px solid rgba(124,111,255,0.35);
+            border-radius: 14px;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 150;
+            transition: all 0.3s;
+            box-shadow: 0 4px 24px rgba(124,111,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .toggle-sidebar-btn:hover {
+            background: linear-gradient(135deg, rgba(124,111,255,0.45), rgba(255,111,145,0.35));
+            box-shadow: 0 6px 32px rgba(124,111,255,0.4);
+            transform: scale(1.05) translateY(-1px);
+        }
+
+        .toggle-sidebar-btn svg {
+            width: 22px; height: 22px;
+            stroke: rgba(255,255,255,0.85);
+        }
+
+        /* ===== INPUT ===== */
+        .input-container {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            z-index: 50; text-align: center;
             padding: 1rem;
-            padding-bottom: max(20px, env(safe-area-inset-bottom));
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.5), transparent);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding-bottom: max(18px, env(safe-area-inset-bottom));
+            background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4), transparent);
+            display: flex; justify-content: center; align-items: center;
             pointer-events: none;
         }
 
         #text-input {
             pointer-events: auto;
-            width: 100%;
-            max-width: 500px;
-            padding: 0.5rem 1rem;
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 25px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1rem;
+            width: 100%; max-width: 480px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 28px;
+            color: rgba(255,255,255,0.75);
+            font-size: clamp(0.75rem, 2vw, 0.95rem);
             outline: none;
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px);
             transition: all 0.3s ease;
-            font-family: sans-serif;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
         }
 
-        #text-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
+        #text-input::placeholder { color: rgba(255,255,255,0.3); }
 
         #text-input:focus {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.5);
-            color: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(124,111,255,0.5);
+            color: rgba(255,255,255,0.9);
+            box-shadow: 0 0 0 3px rgba(124,111,255,0.12);
         }
 
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .input-container {
-                padding: 1rem 1rem;
-            }
-
-            #text-input {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-            }
+            .sidebar { width: 100%; right: -100%; }
         }
 
         @media (max-width: 480px) {
-            .input-container {
-                padding: 0.75rem 0.75rem;
-            }
-
-            #text-input {
-                padding: 0.4rem 0.8rem;
-                font-size: 0.85rem;
-            }
+            .toggle-sidebar-btn { right: 12px; bottom: 75px; }
+            #text-input { padding: 9px 16px; }
         }
     </style>
 </head>
 <body>
+
     <div id="canvas-container"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <div class="sidebar-title-dot"></div>
+                إعدادات الجسيمات
+            </div>
+            <button class="close-btn" id="close-sidebar">✕</button>
+        </div>
+
+        <div class="sidebar-content">
+
+            <!-- Colors -->
+            <div class="control-section">
+                <span class="section-label">اللون</span>
+                <div class="color-grid" id="color-buttons"></div>
+                <div class="color-picker-row">
+                    <label>لون مخصص</label>
+                    <input type="color" id="custom-color-picker" value="#FF69B4">
+                </div>
+            </div>
+
+            <!-- Particle Count -->
+            <div class="control-section">
+                <span class="section-label">عدد الجسيمات</span>
+                <div class="count-grid" id="count-buttons">
+                    <button class="count-btn" data-count="10000">قليل<br><span style="opacity:0.6;font-size:9px">10K</span></button>
+                    <button class="count-btn active" data-count="25000">متوسط<br><span style="opacity:0.6;font-size:9px">25K</span></button>
+                    <button class="count-btn" data-count="50000">كثير<br><span style="opacity:0.6;font-size:9px">50K</span></button>
+                </div>
+            </div>
+
+            <!-- Shape -->
+            <div class="control-section">
+                <span class="section-label">الشكل الافتراضي</span>
+                <div class="shape-grid" id="shape-buttons">
+                    <button class="shape-btn active" data-shape="heart">💗 قلب</button>
+                    <button class="shape-btn" data-shape="sphere">🔵 كرة</button>
+                </div>
+            </div>
+
+            <!-- Sliders -->
+            <div class="control-section">
+                <span class="section-label">التحكم</span>
+
+                <div class="slider-row">
+                    <div class="slider-top">
+                        <span class="slider-name">حجم الجسيمات</span>
+                        <span class="slider-value" id="size-val">0.12</span>
+                    </div>
+                    <input type="range" id="size-slider" min="0.04" max="0.5" step="0.01" value="0.12">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-top">
+                        <span class="slider-name">سرعة الحركة</span>
+                        <span class="slider-value" id="speed-val">0.08</span>
+                    </div>
+                    <input type="range" id="speed-slider" min="0.01" max="0.25" step="0.005" value="0.08">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-top">
+                        <span class="slider-name">قوة تأثير الماوس</span>
+                        <span class="slider-value" id="mouse-val">1.8</span>
+                    </div>
+                    <input type="range" id="mouse-slider" min="0" max="5" step="0.1" value="1.8">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-top">
+                        <span class="slider-name">نطاق الماوس</span>
+                        <span class="slider-value" id="radius-val">8</span>
+                    </div>
+                    <input type="range" id="radius-slider" min="1" max="20" step="0.5" value="8">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-top">
+                        <span class="slider-name">تلاشي الحركة</span>
+                        <span class="slider-value" id="damp-val">0.78</span>
+                    </div>
+                    <input type="range" id="damp-slider" min="0.5" max="0.98" step="0.01" value="0.78">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-top">
+                        <span class="slider-name">شفافية الجسيمات</span>
+                        <span class="slider-value" id="opacity-val">0.85</span>
+                    </div>
+                    <input type="range" id="opacity-slider" min="0.1" max="1" step="0.05" value="0.85">
+                </div>
+            </div>
+
+            <!-- Reset -->
+            <div class="control-section">
+                <button class="reset-btn" id="reset-btn">↺ &nbsp;إعادة تعيين الإعدادات</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="toggle-sidebar-btn" id="toggle-sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
+        </svg>
+    </button>
+
+    <!-- Input -->
     <div class="input-container">
-        <input 
-            id="text-input" 
-            type="text" 
-            placeholder="اكتب نصاً..." 
-            maxlength="15" 
-            autocomplete="off"
-        >
+        <input id="text-input" type="text" placeholder="اكتب نصاً لتشكيله..." maxlength="50" autocomplete="off">
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="particle-morphing.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
